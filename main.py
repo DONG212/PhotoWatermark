@@ -184,7 +184,7 @@ def main():
     主函数：解析命令行参数并处理图片
     """
     parser = argparse.ArgumentParser(description='为图片添加基于EXIF拍摄时间的水印')
-    parser.add_argument('input_dir', help=r'C:\Users\DONGH\Pictures\作业\0ff41bd5ad6eddc451da92919292a1fd5266d016950a.jpg')
+    parser.add_argument('input_dir', help='输入图片目录路径')
     parser.add_argument('--font_size', type=int, default=24, help='水印字体大小（默认: 24）')
     parser.add_argument('--color', default='255,255,255,128',
                         help='水印颜色（支持RGB、十六进制或颜色名称，默认: 白色半透明）')
