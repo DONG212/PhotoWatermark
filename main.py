@@ -1,14 +1,36 @@
 import argparse
 import os
 from PIL import Image, ImageDraw, ImageFont, ExifTags
-from PIL.ExifTags import TAGS, GPSTAGS
+from PIL.ExifTags import TAGS
 import sys
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+
+def select_image_file():
+    """打开文件选择对话框让用户选择图片"""
+    root = tk.Tk()
+    root.withdraw()  # 隐藏主窗口
+
+    file_path = filedialog.askopenfilename(
+        title="选择要添加水印的图片",
+        filetypes=[
+            ("图片文件", "*.jpg *.jpeg *.png *.tiff *.bmp"),
+            ("JPEG 文件", "*.jpg *.jpeg"),
+            ("PNG 文件", "*.png"),
+            ("所有文件", "*.*")
+        ]
+    )
+
+    if not file_path:
+        print("未选择任何文件，程序退出。")
+        sys.exit(0)
+
+    return file_path
 
 
 def get_exif_date(image_path):
-    """
-    获取图片的EXIF拍摄日期信息
-    """
+    """获取图片的EXIF拍摄日期信息"""
     try:
         image = Image.open(image_path)
         exif_data = image._getexif()
@@ -27,9 +49,7 @@ def get_exif_date(image_path):
 
 
 def parse_date(date_str):
-    """
-    解析EXIF日期格式为年月日
-    """
+    """解析EXIF日期格式为年月日"""
     if date_str:
         # EXIF日期格式通常为 "YYYY:MM:DD HH:MM:SS"
         return date_str.split(' ')[0].replace(':', '-')
@@ -37,9 +57,7 @@ def parse_date(date_str):
 
 
 def add_watermark_to_image(input_path, output_path, date_text, font_size, color, position):
-    """
-    为单张图片添加水印
-    """
+    """为单张图片添加水印"""
     try:
         # 打开图片
         image = Image.open(input_path).convert('RGBA')
@@ -53,7 +71,10 @@ def add_watermark_to_image(input_path, output_path, date_text, font_size, color,
         try:
             font = ImageFont.truetype("arial.ttf", font_size)
         except:
-            font = ImageFont.load_default()
+            try:
+                font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
 
         # 计算文本尺寸
         bbox = draw.textbbox((0, 0), date_text, font=font)
@@ -82,7 +103,7 @@ def add_watermark_to_image(input_path, output_path, date_text, font_size, color,
         watermarked = Image.alpha_composite(image, watermark)
 
         # 转换为RGB模式保存为JPEG
-        if output_path.lower().endswith('.jpg') or output_path.lower().endswith('.jpeg'):
+        if output_path.lower().endswith(('.jpg', '.jpeg')):
             watermarked = watermarked.convert('RGB')
 
         watermarked.save(output_path)
@@ -93,48 +114,8 @@ def add_watermark_to_image(input_path, output_path, date_text, font_size, color,
         return False
 
 
-def process_directory(input_dir, font_size, color, position):
-    """
-    处理目录中的所有图片
-    """
-    # 创建输出目录
-    output_dir = os.path.join(input_dir, f"{os.path.basename(input_dir)}_watermark")
-    os.makedirs(output_dir, exist_ok=True)
-
-    # 支持的图片格式
-    supported_formats = ('.jpg', '.jpeg', '.png', '.tiff', '.bmp')
-
-    # 遍历目录中的文件
-    processed_count = 0
-    for filename in os.listdir(input_dir):
-        if filename.lower().endswith(supported_formats):
-            input_path = os.path.join(input_dir, filename)
-
-            # 获取拍摄日期
-            exif_date = get_exif_date(input_path)
-            date_text = parse_date(exif_date) if exif_date else "无日期信息"
-
-            # 生成输出路径
-            output_path = os.path.join(output_dir, filename)
-
-            # 添加水印
-            if add_watermark_to_image(input_path, output_path, date_text, font_size, color, position):
-                print(f"已处理: {filename} -> 水印: {date_text}")
-                processed_count += 1
-            else:
-                print(f"处理失败: {filename}")
-
-    return processed_count
-
-
 def parse_color(color_str):
-    """
-    解析颜色参数
-    支持格式:
-    - RGB: "255,0,0"
-    - 十六进制: "#FF0000"
-    - 颜色名称: "red"
-    """
+    """解析颜色参数"""
     color_str = color_str.strip().lower()
 
     # 预定义颜色名称
@@ -180,37 +161,50 @@ def parse_color(color_str):
 
 
 def main():
-    """
-    主函数：解析命令行参数并处理图片
-    """
+    """主函数：解析命令行参数并处理图片"""
     parser = argparse.ArgumentParser(description='为图片添加基于EXIF拍摄时间的水印')
-    parser.add_argument('input_dir', help='输入图片目录路径')
     parser.add_argument('--font_size', type=int, default=24, help='水印字体大小（默认: 24）')
     parser.add_argument('--color', default='255,255,255,128',
                         help='水印颜色（支持RGB、十六进制或颜色名称，默认: 白色半透明）')
     parser.add_argument('--position', choices=['左上角', '居中', '右下角'], default='右下角',
-                        help='水印位置(默认: 右下角)')
+                        help='水印位置（默认: 右下角）')
 
     args = parser.parse_args()
 
-    # 检查输入目录是否存在
-    if not os.path.isdir(args.input_dir):
-        print(f"错误: 目录 '{args.input_dir}' 不存在")
-        sys.exit(1)
+    print("=== 图片水印添加工具 ===")
+    print("请选择要添加水印的图片...")
+
+    # 打开文件选择对话框
+    input_path = select_image_file()
+    print(f"已选择图片: {input_path}")
+
+    # 获取文件所在目录和文件名
+    input_dir = os.path.dirname(input_path)
+    filename = os.path.basename(input_path)
+
+    # 创建输出目录
+    output_dir = os.path.join(input_dir, f"{os.path.basename(input_dir)}_watermark")
+    os.makedirs(output_dir, exist_ok=True)
 
     # 解析颜色
     color = parse_color(args.color)
 
-    print(f"开始处理目录: {args.input_dir}")
-    print(f"字体大小: {args.font_size}, 颜色: {color}, 位置: {args.position}")
-    print("-" * 50)
+    # 获取拍摄日期
+    exif_date = get_exif_date(input_path)
+    date_text = parse_date(exif_date) if exif_date else "无日期信息"
+    print(f"拍摄时间: {date_text}")
 
-    # 处理目录中的图片
-    processed_count = process_directory(args.input_dir, args.font_size, color, args.position)
+    # 生成输出路径
+    output_path = os.path.join(output_dir, filename)
 
-    print("-" * 50)
-    print(f"处理完成! 成功处理 {processed_count} 张图片")
-    print(f"输出目录: {os.path.join(args.input_dir, f'{os.path.basename(args.input_dir)}_watermark')}")
+    # 添加水印
+    if add_watermark_to_image(input_path, output_path, date_text, args.font_size, color, args.position):
+        print(f"✓ 水印添加成功!")
+        print(f"✓ 输出文件: {output_path}")
+        print(f"✓ 水印内容: {date_text}")
+        print(f"✓ 保存位置: {output_dir}")
+    else:
+        print("✗ 水印添加失败!")
 
 
 if __name__ == "__main__":
