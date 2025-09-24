@@ -189,7 +189,7 @@ def main():
     parser.add_argument('--color', default='255,255,255,128',
                         help='水印颜色（支持RGB、十六进制或颜色名称，默认: 白色半透明）')
     parser.add_argument('--position', choices=['左上角', '居中', '右下角'], default='右下角',
-                        help='水印位置（默认: 右下角）')
+                        help='水印位置(默认: 右下角)')
 
     args = parser.parse_args()
 
