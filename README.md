@@ -55,7 +55,6 @@ python watermark.py /path/to/your/images --color blue --position 居中
 - blue
 - yellow
 - gray
-- silver
 
 ## 📁 输出结果
 
